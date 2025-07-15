@@ -1,21 +1,22 @@
 import { View, Text, StyleSheet, Image, TextInput } from "react-native";
 import user from "../../assets/data/user.json";
-import React from "react";
+import React, { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import colors from "../../theme/colors";
 import fonts from "../../theme/fonts";
 import { useForm, Controller, Control } from "react-hook-form";
 import { IUser } from "../../types/models";
 
-type EditableUserField = "name" | "username" | "bio" | "website"
+type EditableUserField = "name" | "username" | "bio" | "website";
 
-type EditableUser = Pick<IUser,EditableUserField >
+type EditableUser = Pick<IUser, EditableUserField>;
 
 interface CustomInput {
   control: Control<EditableUser, object>;
   name: EditableUserField;
   label: string;
   mutiline?: boolean;
-  rules?: object
+  rules?: object;
 }
 
 const CustomInput = ({
@@ -23,48 +24,108 @@ const CustomInput = ({
   name,
   control,
   mutiline = false,
-  rules = {}
+  rules = {},
 }: CustomInput) => (
-    <Controller
+  <Controller
     control={control}
     name={name}
     rules={rules}
-    render={({field: {value, onChange, onBlur}, fieldState: {error}}) => {  
-       return (
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={{flex: 1}}>
-            <TextInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder={label} style={[styles.input, {borderColor: error ? colors.accent : colors.black}]} multiline />
-            {error && <Text style={{color: colors.accent}}>{error.message || "Error"}</Text>}
+    render={({ field: { value, onChange, onBlur }, fieldState: { error } }) => {
+      return (
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>{label}</Text>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder={label}
+              style={[
+                styles.input,
+                { borderColor: error ? colors.accent : colors.black },
+              ]}
+              multiline
+            />
+            {error && (
+              <Text style={{ color: colors.accent }}>
+                {error.message || "Error"}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-    )
+      );
     }}
   />
-)
+);
 
 const EditProfile = () => {
-  const { control, handleSubmit} = useForm<EditableUser>({
+  const [image, setImage] = useState<string | null>(null);
+
+  const { control, handleSubmit } = useForm<EditableUser>({
     defaultValues: {
-        name: user.name,
-        username: user.username,
-        website: user.website,
-        bio: user.bio
-    }
+      name: user.name,
+      username: user.username,
+      website: user.website,
+      bio: user.bio,
+    },
   });
 
-  // Onsubmit
+  // Onsubmit edit profile
   const onSubmit = (data: EditableUser) => {
     console.log("Submit", data);
   };
+
+  //   onChange photo func
+  const onChangePhoto = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    
+    }
+  };
+
   return (
     <View style={styles.page}>
-      <Image source={{ uri: user.image }} style={styles.avatar} />
-      <Text style={styles.textButton}>Edit profile photo</Text>
-      <CustomInput name="name" control={control} rules={{required: "Name is required"}} label="Name" />
-      <CustomInput name="username" control={control} rules={{required: "Username is required"}} label="Username" />
-      <CustomInput name="website" control={control} rules={{required: "Website is required"}} label="Website" />
-      <CustomInput name="bio" control={control} rules={{required: "Bio is required", maxLength: {value:200, message: "Bio should be less than 200"}}} label="Bio" mutiline />
+      <Image source={{ uri: image || user.image }} style={styles.avatar} />
+      <Text onPress={onChangePhoto} style={styles.textButton}>
+        Edit profile photo
+      </Text>
+      <CustomInput
+        name="name"
+        control={control}
+        rules={{ required: "Name is required" }}
+        label="Name"
+      />
+      <CustomInput
+        name="username"
+        control={control}
+        rules={{ required: "Username is required" }}
+        label="Username"
+      />
+      <CustomInput
+        name="website"
+        control={control}
+        rules={{ required: "Website is required" }}
+        label="Website"
+      />
+      <CustomInput
+        name="bio"
+        control={control}
+        rules={{
+          required: "Bio is required",
+          maxLength: { value: 200, message: "Bio should be less than 200" },
+        }}
+        label="Bio"
+        mutiline
+      />
       <Text onPress={handleSubmit(onSubmit)} style={styles.textButton}>
         Submit
       </Text>
